@@ -1,6 +1,6 @@
 package dbmigrator
 
-var Postgres = &MigrationQueryDefinition{
+var PostgreSQL = &MigrationQueryDefinition{
 	CheckTableExists:       "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'migrations')",
 	CreateMigrationsTable:  "CREATE TABLE migrations (version INT NOT NULL, installed_at TIMESTAMP NOT NULL)",
 	InsertMigration:        "INSERT INTO migrations (version, installed_at) VALUES ($1, $2)",
@@ -24,7 +24,7 @@ var SQLite = &MigrationQueryDefinition{
 	SelectInstalledVersion: "SELECT version FROM migrations ORDER BY version DESC LIMIT 1",
 }
 
-var MsSql = &MigrationQueryDefinition{
+var SQLServer = &MigrationQueryDefinition{
 	CheckTableExists:       "SELECT CASE WHEN EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'migrations') THEN 1 ELSE 0 END",
 	CreateMigrationsTable:  "CREATE TABLE migrations (version INT NOT NULL, installed_at DATETIME NOT NULL)",
 	InsertMigration:        "INSERT INTO migrations (version, installed_at) VALUES (@p1, @p2)",

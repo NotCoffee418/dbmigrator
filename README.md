@@ -45,6 +45,15 @@ import (
 var migrationFS embed.FS // `embed.FS` recommended but any `fs.FS` will work
 
 func main() {
+    // Define the query set for your database. Defaults to MySQL.
+    // Must be called before any other dbmigrator functions.
+    dbmigrator.SetDatabaseType(dbmigrator.PostgreSQL)
+    // Or
+    //dbmigrator.SetDatabaseType(dbmigrator.MySQL)
+    //dbmigrator.SetDatabaseType(dbmigrator.SQLite)
+    //dbmigrator.SetDatabaseType(dbmigrator.SQLServer)
+    // Or define your own based on dbmigrator.MigrationQueryDefinition
+
     // Directory to migrations inside the FS
     migrationsDir := "migrations"
 

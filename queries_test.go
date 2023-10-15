@@ -28,12 +28,12 @@ var dbTestDefinitions = []dbTestDef{
 		connStr: "file:test.db?cache=shared&mode=memory",
 	},
 	{
-		queries: Postgres,
+		queries: PostgreSQL,
 		driver:  "postgres",
 		connStr: "host=localhost port=10000 user=test password=test dbname=test sslmode=disable",
 	},
 	{
-		queries: MsSql,
+		queries: SQLServer,
 		driver:  "sqlserver",
 		connStr: "sqlserver://sa:Test$123@localhost:10002?database=master",
 	},
