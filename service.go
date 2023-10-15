@@ -279,16 +279,13 @@ func ListAvailableMigrationsCh(migrationFs fs.FS, path string) chan []migrationF
 func getInstalledMigrationVersionCh(db *sql.DB) chan int {
 	resultChan := make(chan int, 1)
 	go func() {
-		// Connection check since we rely on an error to determine if the table exists
-		var validity int
-		err := db.QueryRow("SELECT 1").Scan(&validity)
-		if err != nil || validity != 1 {
-			panic("Failed to run SELECT 1 query")
-		}
+		// Ensure migrations table exists
+		ensureMigrationsTableChan := EnsureMigrationTableExistsCh(db)
+		<-ensureMigrationsTableChan
 
 		// Get installed migration version
 		var version int
-		err = db.
+		err := db.
 			QueryRow("SELECT version FROM migrations ORDER BY version DESC LIMIT 1").
 			Scan(&version)
 		if err != nil {
@@ -376,4 +373,30 @@ func fillMigrationContents(migration *migrationFileInfo, doneChan chan bool) {
 		down: downContents.String(),
 	}
 	doneChan <- true
+}
+
+func EnsureMigrationTableExistsCh(db *sql.DB) chan bool {
+	doneChan := make(chan bool, 1)
+	go func() {
+		// Exist check
+		var exists bool
+		err := db.
+			QueryRow("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'migrations')").
+			Scan(&exists)
+		if err != nil {
+			log.Fatalf("Error checking if migrations table exists: %v", err)
+		}
+
+		// Create on missing
+		if !exists {
+			_, err := db.Exec(`CREATE TABLE migrations (version INT NOT NULL, installed_at TIMESTAMP NOT NULL)`)
+			if err != nil {
+				log.Fatalf("Error creating migrations table: %v", err)
+			}
+
+		}
+		doneChan <- true
+		close(doneChan)
+	}()
+	return doneChan
 }
