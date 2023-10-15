@@ -291,10 +291,6 @@ func getInstalledMigrationVersionCh(db *sql.DB) chan int {
 		if err != nil {
 			// No migrations applied yet
 			if errors.Is(err, sql.ErrNoRows) {
-				_, err := db.Exec(`CREATE TABLE migrations (version INT NOT NULL, installed_at TIMESTAMP NOT NULL)`)
-				if err != nil {
-					log.Fatalf("Error creating migrations table: %v", err)
-				}
 				resultChan <- 0
 				close(resultChan)
 				return
