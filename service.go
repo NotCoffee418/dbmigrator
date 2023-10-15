@@ -15,29 +15,19 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type migrationFileInfo struct {
-	version  int
-	file     string
-	contents *migrationContents // not always populated
-}
-
-type migrationContents struct {
-	up   string
-	down string
-}
-
-type MigrationsTable struct {
-	Version     int       `db:"version"`
-	InstalledAt time.Time `db:"installed_at"`
-}
-
-type MigrationState struct {
-	AvailableVersion int
-	InstalledVersion int
-	Migrations       []migrationFileInfo
+// SetDatabaseType sets the active query set to use for migrations.
+// This should be called before other dbmigrator functions when used,
+// but is optional and defaults to MySQL.
+//
+// MigrationQueries describes the queries used by the migrator.
+// You can set up your own or use one of the defaults.
+// Usage: dbmigrator.SetDatabaseType(dbmigrator.Postgres)
+func SetDatabaseType(querySet *MigrationQueryDefinition) {
+	activeQueryDef = querySet
 }
 
 // MigrateUpCh migrates the database up to the latest version
+// Returns: channel that will be closed when the migration is complete
 func MigrateUpCh(db *sql.DB, migrationFs fs.FS, migrationDir string) chan bool {
 	doneChan := make(chan bool)
 	go func() {
@@ -95,9 +85,7 @@ func MigrateUpCh(db *sql.DB, migrationFs fs.FS, migrationDir string) chan bool {
 			}
 
 			// Insert migration into migrations table
-			_, err = tx.Exec(
-				"INSERT INTO migrations (version, installed_at) VALUES ($1, $2)",
-				migration.version, time.Now())
+			_, err = tx.Exec(activeQueryDef.InsertMigration, migration.version, time.Now())
 			if err != nil {
 				_ = tx.Rollback()
 				log.Fatalf("Error inserting migration version into migrations table %d: %v", migration.version, err)
@@ -167,7 +155,7 @@ func MigrateDownCh(db *sql.DB, migrationFs fs.FS, migrationDir string) chan bool
 
 		// Insert migration into migrations table
 		_, err = tx.Exec(
-			"DELETE FROM migrations WHERE version = $1", migration.version)
+			activeQueryDef.DeleteMigration, migration.version)
 		if err != nil {
 			_ = tx.Rollback()
 			log.Fatalf("Error removing version from migrations table %d: %v", migration.version, err)
@@ -286,7 +274,7 @@ func getInstalledMigrationVersionCh(db *sql.DB) chan int {
 		// Get installed migration version
 		var version int
 		err := db.
-			QueryRow("SELECT version FROM migrations ORDER BY version DESC LIMIT 1").
+			QueryRow(activeQueryDef.SelectInstalledVersion).
 			Scan(&version)
 		if err != nil {
 			// No migrations applied yet
@@ -377,7 +365,7 @@ func EnsureMigrationTableExistsCh(db *sql.DB) chan bool {
 		// Exist check
 		var exists bool
 		err := db.
-			QueryRow("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'migrations')").
+			QueryRow(activeQueryDef.CheckTableExists).
 			Scan(&exists)
 		if err != nil {
 			log.Fatalf("Error checking if migrations table exists: %v", err)
@@ -385,7 +373,7 @@ func EnsureMigrationTableExistsCh(db *sql.DB) chan bool {
 
 		// Create on missing
 		if !exists {
-			_, err := db.Exec(`CREATE TABLE migrations (version INT NOT NULL, installed_at TIMESTAMP NOT NULL)`)
+			_, err := db.Exec(activeQueryDef.CreateMigrationsTable)
 			if err != nil {
 				log.Fatalf("Error creating migrations table: %v", err)
 			}
