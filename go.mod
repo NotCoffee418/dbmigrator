@@ -1,6 +1,6 @@
 module github.com/NotCoffee418/dbmigrator
 
-go 1.21.2
+go 1.21
 
 require (
 	github.com/denisenkom/go-mssqldb v0.12.3
