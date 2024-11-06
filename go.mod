@@ -1,6 +1,6 @@
 module github.com/NotCoffee418/dbmigrator
 
-go 1.21
+go 1.23
 
 require (
 	github.com/denisenkom/go-mssqldb v0.12.3
@@ -15,5 +15,5 @@ require (
 	github.com/golang-sql/sqlexp v0.1.0 // indirect
 	github.com/stretchr/testify v1.8.4 // indirect
 	golang.org/x/crypto v0.17.0 // indirect
-	golang.org/x/sys v0.15.0 // indirect
+	golang.org/x/sys v0.26.0 // indirect
 )
