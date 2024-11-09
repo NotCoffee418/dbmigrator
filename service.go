@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"io/fs"
-	"os"
 	"regexp"
 	"sort"
 	"strconv"
@@ -61,7 +60,7 @@ func MigrateUpCh(db *sql.DB, migrationFs fs.FS, migrationDir string) chan bool {
 		filledChannel := make(chan bool)
 		for i := range migrationsToApply {
 			idx := i
-			go fillMigrationContents(&migrationsToApply[idx], filledChannel)
+			go fillMigrationContents(migrationFs, &migrationsToApply[idx], filledChannel)
 		}
 		for range migrationsToApply {
 			<-filledChannel
@@ -136,7 +135,7 @@ func MigrateDownCh(db *sql.DB, migrationFs fs.FS, migrationDir string) chan bool
 
 		// Get migration contents
 		filledChannel := make(chan bool)
-		go fillMigrationContents(migration, filledChannel)
+		go fillMigrationContents(migrationFs, migration, filledChannel)
 		<-filledChannel
 		close(filledChannel)
 
@@ -293,21 +292,21 @@ func getInstalledMigrationVersionCh(db *sql.DB) chan int {
 }
 
 // fillMigrationContents fills the up/down contents of a migration
-func fillMigrationContents(migration *migrationFileInfo, doneChan chan bool) {
+func fillMigrationContents(fs fs.FS, migration *migrationFileInfo, doneChan chan bool) {
 	upRx := regexp.MustCompile(`(?i)--\s*\+up(\s*)?(.+)?`)     // +up
 	downRx := regexp.MustCompile(`(?i)--\s*\+down(\s*)?(.+)?`) // +down
 
 	// Read file contents
-	file, err := os.Open(migration.file)
+	file, err := fs.Open(migration.file)
 	if err != nil {
 		log.Fatalf("Error opening migration file: %v", err)
 	}
-	defer func(file *os.File) {
+	defer func() {
 		err := file.Close()
 		if err != nil {
 			log.Fatalf("Error closing migration file: %v", err)
 		}
-	}(file)
+	}()
 
 	foundUp := false
 	foundDown := false
