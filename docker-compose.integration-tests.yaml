@@ -22,12 +22,13 @@ services:
       MYSQL_USER: test
       MYSQL_PASSWORD: test
 
-  dbmigrator-mssql:
-    image: mcr.microsoft.com/mssql/server
-    container_name: dbmigrator-mssql
-    ports:
-      - "10002:10002"
-    environment:
-      ACCEPT_EULA: "Y"
-      SA_PASSWORD: "Test$123"
-      MSSQL_TCP_PORT: 10002
+  # Times out on github actions
+  # dbmigrator-mssql:
+  #   image: mcr.microsoft.com/mssql/server
+  #   container_name: dbmigrator-mssql
+  #   ports:
+  #     - "10002:10002"
+  #   environment:
+  #     ACCEPT_EULA: "Y"
+  #     SA_PASSWORD: "Test$123"
+  #     MSSQL_TCP_PORT: 10002
